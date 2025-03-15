@@ -1,0 +1,273 @@
+/* 8-bit UI Theme */
+
+/* Base colors */
+:root {
+  --pixel-primary: #ff6b6b;
+  --pixel-secondary: #4ecdc4;
+  --pixel-accent: #ffe66d;
+  --pixel-background: #f7fff7;
+  --pixel-text: #1a535c;
+  --pixel-border: #2d3436;
+  --pixel-shadow: rgba(0, 0, 0, 0.2);
+  
+  /* Pixel sizes */
+  --pixel-size: 4px;
+  --pixel-border-size: 4px;
+  
+  /* Font settings */
+  --pixel-font: 'Press Start 2P', system-ui, sans-serif;
+}
+
+/* Global styles */
+body {
+  background-color: var(--pixel-background);
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  background-size: 16px 16px;
+  image-rendering: pixelated;
+}
+
+/* Typography */
+.pixel-text {
+  font-family: var(--pixel-font);
+  letter-spacing: 1px;
+  line-height: 1.5;
+  text-shadow: 2px 2px 0 var(--pixel-shadow);
+}
+
+h1.pixel-text, 
+h2.pixel-text, 
+h3.pixel-text {
+  position: relative;
+  display: inline-block;
+  color: var(--pixel-text);
+  padding: 0.5rem 0;
+}
+
+h1.pixel-text::after,
+h2.pixel-text::after,
+h3.pixel-text::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: var(--pixel-size);
+  background: repeating-linear-gradient(
+    to right,
+    var(--pixel-primary),
+    var(--pixel-primary) var(--pixel-size),
+    var(--pixel-secondary) var(--pixel-size),
+    var(--pixel-secondary) calc(var(--pixel-size) * 2)
+  );
+}
+
+/* Pixel Buttons */
+.pixel-btn {
+  font-family: var(--pixel-font);
+  font-size: 14px;
+  padding: 12px 24px;
+  background-color: var(--pixel-primary);
+  color: white;
+  border: none;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  image-rendering: pixelated;
+}
+
+.pixel-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: var(--pixel-border-size) solid var(--pixel-border);
+  box-shadow: var(--pixel-size) var(--pixel-size) 0 var(--pixel-shadow);
+}
+
+.pixel-btn:hover {
+  transform: translate(2px, 2px);
+}
+
+.pixel-btn:hover::before {
+  box-shadow: calc(var(--pixel-size) - 2px) calc(var(--pixel-size) - 2px) 0 var(--pixel-shadow);
+}
+
+.pixel-btn:active {
+  transform: translate(4px, 4px);
+}
+
+.pixel-btn:active::before {
+  box-shadow: none;
+}
+
+.pixel-btn-secondary {
+  background-color: var(--pixel-secondary);
+}
+
+.pixel-btn-accent {
+  background-color: var(--pixel-accent);
+  color: var(--pixel-text);
+}
+
+/* Pixel Cards */
+.pixel-card {
+  background-color: white;
+  padding: 16px;
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.pixel-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: var(--pixel-border-size) solid var(--pixel-border);
+  box-shadow: var(--pixel-size) var(--pixel-size) 0 var(--pixel-shadow);
+  pointer-events: none;
+}
+
+/* Pixel Inputs */
+.pixel-input {
+  font-family: var(--pixel-font);
+  font-size: 14px;
+  padding: 12px;
+  background-color: white;
+  border: var(--pixel-border-size) solid var(--pixel-border);
+  box-shadow: inset var(--pixel-size) var(--pixel-size) 0 rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+.pixel-input:focus {
+  outline: none;
+  border-color: var(--pixel-primary);
+}
+
+/* Pixel Progress Bar */
+.pixel-progress {
+  height: 20px;
+  background-color: #e0e0e0;
+  border: var(--pixel-border-size) solid var(--pixel-border);
+  position: relative;
+}
+
+.pixel-progress-bar {
+  height: 100%;
+  background: repeating-linear-gradient(
+    to right,
+    var(--pixel-primary),
+    var(--pixel-primary) var(--pixel-size),
+    var(--pixel-secondary) var(--pixel-size),
+    var(--pixel-secondary) calc(var(--pixel-size) * 2)
+  );
+  transition: width 0.3s ease;
+}
+
+/* Pixel Badges */
+.pixel-badge {
+  display: inline-block;
+  font-family: var(--pixel-font);
+  font-size: 12px;
+  padding: 4px 8px;
+  background-color: var(--pixel-accent);
+  color: var(--pixel-text);
+  border: 2px solid var(--pixel-border);
+}
+
+/* Pixel Icons */
+.pixel-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+/* Animations */
+@keyframes pixel-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.pixel-pulse {
+  animation: pixel-pulse 2s infinite;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  :root {
+    --pixel-size: 3px;
+    --pixel-border-size: 3px;
+  }
+  
+  .pixel-btn {
+    font-size: 12px;
+    padding: 10px 20px;
+  }
+}
+
+/* Logo */
+.pixel-logo {
+  font-family: var(--pixel-font);
+  font-size: 24px;
+  color: var(--pixel-primary);
+  text-shadow: 
+    2px 2px 0 var(--pixel-border),
+    4px 4px 0 var(--pixel-shadow);
+  letter-spacing: 2px;
+  margin-bottom: 16px;
+}
+
+/* Hero section */
+.pixel-hero {
+  position: relative;
+  padding: 40px 20px;
+  text-align: center;
+  background-color: var(--pixel-background);
+  border-bottom: var(--pixel-border-size) solid var(--pixel-border);
+}
+
+.pixel-hero::after {
+  content: '';
+  position: absolute;
+  bottom: calc(var(--pixel-border-size) * -1);
+  left: 0;
+  width: 100%;
+  height: var(--pixel-size);
+  background: repeating-linear-gradient(
+    to right,
+    var(--pixel-primary),
+    var(--pixel-primary) var(--pixel-size),
+    var(--pixel-secondary) var(--pixel-size),
+    var(--pixel-secondary) calc(var(--pixel-size) * 2)
+  );
+}
+
+.pixel-hero h1 {
+  font-family: var(--pixel-font);
+  font-size: 32px;
+  color: var(--pixel-text);
+  margin-bottom: 16px;
+  text-shadow: 
+    2px 2px 0 var(--pixel-border),
+    4px 4px 0 var(--pixel-shadow);
+}
+
+.pixel-hero p {
+  font-family: var(--pixel-font);
+  font-size: 16px;
+  color: var(--pixel-text);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Import pixel font */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
