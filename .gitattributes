@@ -1,0 +1,4 @@
+node_modules/@cloudflare/workerd-windows-64/bin/workerd.exe filter=lfs diff=lfs merge=lfs -text
+node_modules/@next/swc-win32-x64-msvc/next-swc.win32-x64-msvc.node filter=lfs diff=lfs merge=lfs -text
+node_modules/**/*.exe filter=lfs diff=lfs merge=lfs -text
+node_modules/**/*.node filter=lfs diff=lfs merge=lfs -text
