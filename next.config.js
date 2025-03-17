@@ -11,8 +11,8 @@ const nextConfig = {
         new CopyPlugin({
           patterns: [
             {
-              from: path.join(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.min.js'),
-              to: path.join(__dirname, 'public'),
+              from: path.join(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs'),
+              to: path.join(__dirname, 'public/pdf.worker.min.js'),
             },
           ],
         }),

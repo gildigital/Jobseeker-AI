@@ -70,10 +70,14 @@ async function extractTextFromPDF(file: File): Promise<string> {
     // Set up PDF.js worker - use dynamic import for Next.js compatibility
     const pdfjsLib = pdfjs;
     
-    // Configure the worker source properly for Next.js
-    if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
-      // In browser environment, use a local worker
+    // Always set the worker source - this is critical
+    if (typeof window !== 'undefined') {
+      // In browser environment, use the public URL
       pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+    } else {
+      // In server-side environment
+      console.log('Running in server environment, PDF extraction might not work');
+      // We can't really use PDF.js properly on the server
     }
     
     // Load the PDF document
@@ -129,8 +133,17 @@ async function extractTextFromDOC(file: File): Promise<string> {
  * Extract text using OCR (Optical Character Recognition)
  */
 async function extractTextWithOCR(file: File): Promise<string> {
+  // Only run OCR on the client side
+  if (typeof window === 'undefined') {
+    return "OCR processing is only available in the browser.";
+  }
+
   try {
-    const worker = await createWorker();
+    const worker = await createWorker({
+      workerPath: 'https://unpkg.com/tesseract.js@v4.0.0/dist/worker.min.js',
+      langPath: 'https://tessdata.projectnaptha.com/4.0.0',
+      corePath: 'https://unpkg.com/tesseract.js-core@v4.0.0/tesseract-core.wasm.js',
+    } as any);
     
     // Convert file to image data URL
     const reader = new FileReader();
