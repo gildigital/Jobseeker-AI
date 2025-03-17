@@ -63,6 +63,33 @@ export function formatSalary(salaryText: string | null): string | null {
 }
 
 /**
+ * Extract salary value from salary string
+ * Returns the minimum value if a range is provided
+ */
+export function extractSalaryValue(salaryText: string | null): number | null {
+  if (!salaryText) return null;
+  
+  // Remove all non-numeric characters except for decimal points, commas, and hyphens
+  const cleaned = salaryText.replace(/[^\d.,\-K]/g, '');
+  
+  // Check for K (thousands)
+  const hasK = salaryText.toUpperCase().includes('K');
+  
+  // Check if it's a range
+  if (cleaned.includes('-')) {
+    const [min] = cleaned.split('-');
+    const value = parseFloat(min.replace(/,/g, ''));
+    return hasK ? value * 1000 : value;
+  }
+  
+  // Single value
+  const value = parseFloat(cleaned.replace(/,/g, ''));
+  if (isNaN(value)) return null;
+  
+  return hasK ? value * 1000 : value;
+}
+
+/**
  * Clean HTML from text
  */
 export function cleanHtml(html: string): string {
