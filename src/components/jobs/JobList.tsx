@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, ExternalLink, Briefcase, Building, MapPin, DollarSign } from 'lucide-react';
 import { ScrapedJob } from '@/lib/scraper/jobScraper';
