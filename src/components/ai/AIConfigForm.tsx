@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/Button';
 import { Label } from '@/components/ui/label';

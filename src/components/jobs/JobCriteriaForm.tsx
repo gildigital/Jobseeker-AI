@@ -1,9 +1,8 @@
 'use client';
-
 import { useState } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +18,7 @@ export interface JobCriteria {
   minSalary: number;
 }
 
-export default function JobCriteriaForm({ onSave }: JobCriteriaFormProps) {
+export function JobCriteriaForm({ onSave }: JobCriteriaFormProps) {
   const [title, setTitle] = useState('');
   const [locationInput, setLocationInput] = useState('');
   const [locations, setLocations] = useState<string[]>([]);
@@ -57,7 +56,7 @@ export default function JobCriteriaForm({ onSave }: JobCriteriaFormProps) {
   };
   
   return (
-    <Card className="p-6 border-2">
+    <Card className="p-6 border-2 pixel-card">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="job-title">Job Title</Label>
@@ -85,13 +84,13 @@ export default function JobCriteriaForm({ onSave }: JobCriteriaFormProps) {
                 }
               }}
             />
-            <Button type="button" onClick={handleAddLocation}>Add</Button>
+            <div className="pixel-btn cursor-pointer" onClick={handleAddLocation}>Add</div>
           </div>
           
           {locations.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
               {locations.map((location) => (
-                <Badge key={location} className="px-2 py-1 flex items-center">
+                <Badge key={location} className="px-2 py-1 flex items-center pixel-badge">
                   {location}
                   <button
                     type="button"
@@ -109,7 +108,7 @@ export default function JobCriteriaForm({ onSave }: JobCriteriaFormProps) {
         <div className="space-y-2">
           <div className="flex justify-between">
             <Label htmlFor="min-salary">Minimum Salary</Label>
-            <span className="text-sm font-medium">${minSalary.toLocaleString()}</span>
+            <span className="text-sm font-medium pixel-text">${minSalary.toLocaleString()}</span>
           </div>
           <Slider
             id="min-salary"
@@ -120,7 +119,7 @@ export default function JobCriteriaForm({ onSave }: JobCriteriaFormProps) {
             onValueChange={(values) => setMinSalary(values[0])}
             className="py-4"
           />
-          <div className="flex justify-between text-xs text-gray-500">
+          <div className="flex justify-between text-xs text-gray-500 pixel-text">
             <span>$0</span>
             <span>$50k</span>
             <span>$100k</span>
@@ -129,7 +128,9 @@ export default function JobCriteriaForm({ onSave }: JobCriteriaFormProps) {
           </div>
         </div>
         
-        <Button type="submit" className="w-full">Save Job Search Criteria</Button>
+        <div className="pixel-btn w-full text-center cursor-pointer" onClick={handleSubmit}>
+          Save Job Search Criteria
+        </div>
       </form>
     </Card>
   );
