@@ -1,13 +1,12 @@
 'use client';
-
 import { useState } from 'react';
-import { Upload, FileText, Check, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { Progress } from '@/components/ui/Progress';
+import { Upload, FileText, AlertCircle, Check } from 'lucide-react';
 
 interface ResumeUploaderProps {
-  onUploadComplete: (resumeData: any) => void;
+  onUploadComplete: (data: any) => void;
 }
 
 export default function ResumeUploader({ onUploadComplete }: ResumeUploaderProps) {
@@ -16,12 +15,11 @@ export default function ResumeUploader({ onUploadComplete }: ResumeUploaderProps
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
+  
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
+    if (!e.target.files || e.target.files.length === 0) return;
     
-    // Reset states
+    const selectedFile = e.target.files[0];
     setError(null);
     setSuccess(false);
     setUploadProgress(0);
@@ -41,7 +39,7 @@ export default function ResumeUploader({ onUploadComplete }: ResumeUploaderProps
     
     setFile(selectedFile);
   };
-
+  
   const handleUpload = async () => {
     if (!file) return;
     
@@ -90,9 +88,9 @@ export default function ResumeUploader({ onUploadComplete }: ResumeUploaderProps
       setIsUploading(false);
     }
   };
-
+  
   return (
-    <Card className="p-6 border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 transition-colors">
+    <div className="p-4">
       <div className="flex flex-col items-center justify-center space-y-4">
         {!file ? (
           <>
@@ -100,11 +98,11 @@ export default function ResumeUploader({ onUploadComplete }: ResumeUploaderProps
               <Upload className="h-8 w-8 text-primary" />
             </div>
             <div className="text-center">
-              <h3 className="text-lg font-medium">Upload your resume</h3>
-              <p className="text-sm text-gray-500 mt-1">
+              <h3 className="text-lg font-medium pixel-text">Upload your resume</h3>
+              <p className="text-sm mt-1 pixel-text">
                 Drag and drop your resume file, or click to browse
               </p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs mt-1 pixel-text">
                 Supports PDF, DOC, DOCX, and TXT (Max 5MB)
               </p>
             </div>
@@ -116,9 +114,7 @@ export default function ResumeUploader({ onUploadComplete }: ResumeUploaderProps
               accept=".pdf,.doc,.docx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
             />
             <label htmlFor="resume-upload">
-              <Button variant="outline" className="mt-2" asChild>
-                <span>Browse Files</span>
-              </Button>
+              <div className="pixel-btn mt-2 cursor-pointer">Browse Files</div>
             </label>
           </>
         ) : (
@@ -127,55 +123,62 @@ export default function ResumeUploader({ onUploadComplete }: ResumeUploaderProps
               <FileText className="h-8 w-8 text-primary" />
             </div>
             <div className="text-center">
-              <h3 className="text-lg font-medium">{file.name}</h3>
-              <p className="text-sm text-gray-500 mt-1">
+              <h3 className="text-lg font-medium pixel-text">{file.name}</h3>
+              <p className="text-sm mt-1 pixel-text">
                 {(file.size / 1024 / 1024).toFixed(2)} MB
               </p>
             </div>
             
             {isUploading && (
               <div className="w-full mt-4">
-                <Progress value={uploadProgress} className="h-2" />
-                <p className="text-xs text-center mt-1">Uploading... {uploadProgress}%</p>
+                <div className="pixel-progress">
+                  <div className="pixel-progress-bar" style={{ width: `${uploadProgress}%` }}></div>
+                </div>
+                <p className="text-xs text-center mt-1 pixel-text">Uploading... {uploadProgress}%</p>
               </div>
             )}
             
             {error && (
               <div className="flex items-center text-red-500 mt-2">
                 <AlertCircle className="h-4 w-4 mr-1" />
-                <span className="text-sm">{error}</span>
+                <span className="text-sm pixel-text">{error}</span>
               </div>
             )}
             
             {success && (
               <div className="flex items-center text-green-500 mt-2">
                 <Check className="h-4 w-4 mr-1" />
-                <span className="text-sm">Resume uploaded successfully!</span>
+                <span className="text-sm pixel-text">Resume uploaded successfully!</span>
               </div>
             )}
             
-            <div className="flex space-x-2 mt-4">
-              <Button
-                variant="outline"
+            <div className="flex space-x-4 mt-4">
+              <div 
+                className={`pixel-btn pixel-btn-secondary ${isUploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 onClick={() => {
-                  setFile(null);
-                  setError(null);
-                  setSuccess(false);
+                  if (!isUploading) {
+                    setFile(null);
+                    setError(null);
+                    setSuccess(false);
+                  }
                 }}
-                disabled={isUploading}
               >
                 Change File
-              </Button>
-              <Button 
-                onClick={handleUpload} 
-                disabled={isUploading || success}
+              </div>
+              <div 
+                className={`pixel-btn ${(isUploading || success) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                onClick={() => {
+                  if (!isUploading && !success) {
+                    handleUpload();
+                  }
+                }}
               >
                 {isUploading ? 'Uploading...' : success ? 'Uploaded' : 'Upload Resume'}
-              </Button>
+              </div>
             </div>
           </>
         )}
       </div>
-    </Card>
+    </div>
   );
 }

@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { AIConfigForm, AIConfig } from '@/components/ai/AIConfigForm';
-import { ResumeScore } from '@/components/ai/ResumeScore';
-import { Card } from '@/components/ui/card';
+import { Card } from '@/components/ui/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function AISettingsPage() {

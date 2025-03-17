@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { JobCriteriaForm, JobCriteria } from '@/components/jobs/JobCriteriaForm';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Edit, Search } from 'lucide-react';
 import { formatJobCriteria } from '@/lib/jobs/criteria';

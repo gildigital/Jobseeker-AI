@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Progress } from '@/components/ui/Progress';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { Loader2, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { ScoringResult } from '@/lib/ai/scoring';
 
