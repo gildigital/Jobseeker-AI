@@ -1,10 +1,3 @@
-/**
- * Resume Parser Module
- * 
- * This module handles parsing of resume files in various formats (PDF, DOC, DOCX, TXT)
- * and extracts structured information for job matching.
- */
-
 import { createWorker } from 'tesseract.js';
 import * as pdfjs from 'pdfjs-dist';
 import mammoth from 'mammoth';
@@ -74,10 +67,13 @@ async function extractTextFromPDF(file: File): Promise<string> {
     const arrayBuffer = await file.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
     
-    // Set up PDF.js worker
+    // Set up PDF.js worker - use dynamic import for Next.js compatibility
     const pdfjsLib = pdfjs;
-    if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+    
+    // Configure the worker source properly for Next.js
+    if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+      // In browser environment, use a local worker
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
     }
     
     // Load the PDF document
@@ -90,42 +86,23 @@ async function extractTextFromPDF(file: File): Promise<string> {
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
-      const pageText = textContent.items.map((item: any) => item.str).join(' ');
-      fullText += pageText + '\n';
+      const textItems = textContent.items.map((item: any) => item.str).join(' ');
+      fullText += textItems + '\n';
     }
     
-    // If PDF text extraction fails or returns empty text, try OCR as fallback
+    // If text extraction fails or returns empty, try OCR as fallback
     if (!fullText.trim()) {
-      console.log('PDF text extraction returned empty result, trying OCR...');
+      console.log('PDF text extraction returned empty result, trying OCR fallback');
       fullText = await extractTextWithOCR(file);
     }
     
     return fullText;
   } catch (error) {
     console.error('Error extracting text from PDF:', error);
-    // Fallback to OCR if PDF.js fails
+    
+    // Try OCR as fallback
+    console.log('PDF text extraction failed, trying OCR fallback');
     return extractTextWithOCR(file);
-  }
-}
-
-/**
- * Extract text from PDF using OCR as a fallback
- */
-async function extractTextWithOCR(file: File): Promise<string> {
-  try {
-    const worker = await createWorker();
-    const arrayBuffer = await file.arrayBuffer();
-    
-    await worker.loadLanguage('eng');
-    await worker.initialize('eng');
-    
-    const { data } = await worker.recognize(new Uint8Array(arrayBuffer));
-    await worker.terminate();
-    
-    return data.text;
-  } catch (error) {
-    console.error('OCR extraction failed:', error);
-    return `Failed to extract text from ${file.name}. Please try a different file format.`;
   }
 }
 
@@ -136,18 +113,41 @@ async function extractTextFromDOC(file: File): Promise<string> {
   try {
     const arrayBuffer = await file.arrayBuffer();
     
-    // For DOCX files, use mammoth
-    if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      const result = await mammoth.extractRawText({ arrayBuffer });
-      return result.value;
-    } else {
-      // For DOC files, we would need a different approach
-      // This is a simplified version that suggests using a server-side conversion
-      // or a different library for DOC files
-      return `DOC file format detected. For better results, please convert to DOCX or PDF.`;
-    }
+    // Use mammoth to extract text from DOCX
+    const result = await mammoth.extractRawText({ arrayBuffer });
+    return result.value;
   } catch (error) {
     console.error('Error extracting text from DOC/DOCX:', error);
+    
+    // Try OCR as fallback
+    console.log('DOC/DOCX text extraction failed, trying OCR fallback');
+    return extractTextWithOCR(file);
+  }
+}
+
+/**
+ * Extract text using OCR (Optical Character Recognition)
+ */
+async function extractTextWithOCR(file: File): Promise<string> {
+  try {
+    const worker = await createWorker();
+    
+    // Convert file to image data URL
+    const reader = new FileReader();
+    const imageDataUrl = await new Promise<string>((resolve) => {
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    });
+    
+    // Recognize text from image
+    await worker.load();
+    await worker.reinitialize('eng');
+    const { data } = await worker.recognize(imageDataUrl);
+    await worker.terminate();
+    
+    return data.text;
+  } catch (error) {
+    console.error('Error extracting text with OCR:', error);
     return `Failed to extract text from ${file.name}. Please try a different file format.`;
   }
 }
@@ -156,9 +156,6 @@ async function extractTextFromDOC(file: File): Promise<string> {
  * Extract structured data from raw text using NLP techniques
  */
 function extractStructuredData(text: string): Omit<ParsedResume, 'rawText'> {
-  // In a real implementation, we would use NLP libraries or regex patterns
-  // to extract structured information from the resume text
-  
   return {
     fullName: extractName(text),
     email: extractEmail(text),
@@ -174,21 +171,27 @@ function extractStructuredData(text: string): Omit<ParsedResume, 'rawText'> {
 }
 
 // Helper functions to extract specific information using regex patterns
-// These would be more sophisticated in a real implementation
 
 function extractName(text: string): string {
-  // Look for patterns that might indicate a name at the beginning of the resume
-  const lines = text.split('\n').slice(0, 10); // Check first 10 lines
+  // Look for name at the beginning of the resume
+  const firstLines = text.split('\n').slice(0, 5).join(' ');
   
-  // Look for a line that might be a name (2-3 words, each capitalized)
-  for (const line of lines) {
-    const trimmedLine = line.trim();
-    if (/^[A-Z][a-z]+(?: [A-Z][a-z]+){1,2}$/.test(trimmedLine) && trimmedLine.length > 4) {
-      return trimmedLine;
-    }
+  // Try to find a name pattern (First Last)
+  const nameRegex = /^([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2})/;
+  const match = firstLines.match(nameRegex);
+  
+  if (match && match[1]) {
+    return match[1].trim();
   }
   
-  // Fallback
+  // Fallback: Look for a name anywhere in the first few lines
+  const nameAnywhere = /([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2})/;
+  const matchAnywhere = firstLines.match(nameAnywhere);
+  
+  if (matchAnywhere && matchAnywhere[1]) {
+    return matchAnywhere[1].trim();
+  }
+  
   return "John Doe";
 }
 
@@ -205,35 +208,34 @@ function extractPhone(text: string): string | undefined {
 }
 
 function extractLocation(text: string): string | undefined {
-  // Look for common location patterns
-  const locationRegex = /([A-Z][a-z]+(?:[\s-][A-Z][a-z]+)*),\s*([A-Z]{2})/g;
-  const matches = text.match(locationRegex);
-  return matches ? matches[0] : undefined;
+  // Look for city, state pattern
+  const locationRegex = /([A-Z][a-z]+(?:[\s-][A-Z][a-z]+)*),\s*([A-Z]{2})/;
+  const match = text.match(locationRegex);
+  
+  if (match) {
+    return match[0];
+  }
+  
+  return undefined;
 }
 
 function extractSummary(text: string): string | undefined {
-  // Look for sections that might be a summary
-  const summaryRegexes = [
-    /(?:SUMMARY|PROFILE|OBJECTIVE|ABOUT ME)[:\s]*([\s\S]*?)(?=\n\s*[A-Z]+[:\s]*\n|$)/i,
-    /(?:Career Summary|Professional Summary)[:\s]*([\s\S]*?)(?=\n\s*[A-Z]+[:\s]*\n|$)/i
-  ];
+  // Look for summary section
+  const summaryRegex = /(?:SUMMARY|PROFILE|OBJECTIVE|ABOUT ME)[:\s]*([\s\S]*?)(?=\n\s*[A-Z]+[:\s]*\n|$)/i;
+  const match = text.match(summaryRegex);
   
-  for (const regex of summaryRegexes) {
-    const match = text.match(regex);
-    if (match && match[1]) {
-      return match[1].trim().substring(0, 500); // Limit to 500 chars
-    }
+  if (match && match[1]) {
+    // Limit to a reasonable length
+    return match[1].trim().split('\n')[0].substring(0, 200);
   }
   
-  // If no summary found, take the first paragraph that's not the name or contact info
-  const paragraphs = text.split('\n\n');
-  for (const paragraph of paragraphs.slice(1, 5)) { // Skip first, check next 4
-    if (paragraph.length > 50 && paragraph.length < 1000) {
-      return paragraph.trim();
-    }
+  // Fallback: Use first paragraph if it's not too short
+  const firstPara = text.split('\n\n')[0].trim();
+  if (firstPara.length > 50 && firstPara.length < 500) {
+    return firstPara;
   }
   
-  return "Experienced professional with a track record of success in the industry.";
+  return undefined;
 }
 
 function extractSkills(text: string): string[] {
@@ -242,10 +244,9 @@ function extractSkills(text: string): string[] {
   const match = text.match(skillsRegex);
   
   if (match && match[1]) {
-    // Extract skills from the skills section
     const skillsText = match[1].trim();
     
-    // Try to split by common separators
+    // Split by common separators
     let skills: string[] = [];
     if (skillsText.includes(',')) {
       skills = skillsText.split(',').map(s => s.trim());
@@ -254,67 +255,90 @@ function extractSkills(text: string): string[] {
     } else if (skillsText.includes('\n')) {
       skills = skillsText.split('\n').map(s => s.trim()).filter(Boolean);
     } else {
-      // If no clear separator, try to extract individual skills
-      const skillWords = skillsText.match(/\b[A-Za-z](?:\w+(?:\s+\w+)?){1,3}\b/g);
-      skills = skillWords ? skillWords.filter(s => s.length > 2) : [];
+      // Check for common programming languages and technologies
+      const techKeywords = [
+        'JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'C#', 'Ruby', 'PHP',
+        'React', 'Angular', 'Vue', 'Node.js', 'Express', 'Django', 'Flask',
+        'SQL', 'MongoDB', 'PostgreSQL', 'MySQL', 'Oracle', 'AWS', 'Azure', 'GCP',
+        'Docker', 'Kubernetes', 'Git', 'CI/CD', 'Agile', 'Scrum'
+      ];
+      
+      skills = techKeywords.filter(keyword => 
+        text.includes(keyword) || text.includes(keyword.toLowerCase())
+      );
     }
     
-    // Filter out common non-skill words and limit to 20 skills
-    return skills
-      .filter(skill => skill.length > 2 && !/^(and|the|or|with|in|on|at|to|for|of|by|as)$/i.test(skill))
-      .slice(0, 20);
+    return skills.filter(skill => skill.length > 1).slice(0, 15);
   }
   
-  // Fallback to common skills
-  return ["JavaScript", "React", "Node.js", "TypeScript", "HTML", "CSS"];
+  // Fallback: Extract common tech keywords from the entire text
+  const techKeywords = [
+    'JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'C#', 'Ruby', 'PHP',
+    'React', 'Angular', 'Vue', 'Node.js', 'Express', 'Django', 'Flask',
+    'SQL', 'MongoDB', 'PostgreSQL', 'MySQL', 'Oracle', 'AWS', 'Azure', 'GCP',
+    'Docker', 'Kubernetes', 'Git', 'CI/CD', 'Agile', 'Scrum'
+  ];
+  
+  const skills = techKeywords.filter(keyword => 
+    text.includes(keyword) || text.includes(keyword.toLowerCase())
+  );
+  
+  return skills.length > 0 ? skills : ["JavaScript", "React", "Node.js", "TypeScript", "HTML", "CSS"];
 }
 
 function extractExperience(text: string): ParsedResume['experience'] {
   // Look for experience section
-  const experienceRegex = /(?:EXPERIENCE|WORK EXPERIENCE|EMPLOYMENT|PROFESSIONAL EXPERIENCE)[:\s]*([\s\S]*?)(?=\n\s*(?:EDUCATION|SKILLS|CERTIFICATIONS|LANGUAGES)[:\s]*\n|$)/i;
-  const match = text.match(experienceRegex);
+  const expRegex = /(?:EXPERIENCE|WORK EXPERIENCE|EMPLOYMENT|WORK HISTORY)[:\s]*([\s\S]*?)(?=\n\s*(?:EDUCATION|SKILLS|CERTIFICATIONS|LANGUAGES)[:\s]*\n|$)/i;
+  const match = text.match(expRegex);
   
   if (match && match[1]) {
-    const experienceText = match[1].trim();
+    const expText = match[1].trim();
     
-    // Split into individual job entries (this is simplified)
-    const jobEntries = experienceText.split(/\n\s*\n/);
+    // Split into individual job entries
+    const jobEntries = expText.split(/\n\s*\n/);
     
-    return jobEntries.slice(0, 5).map(entry => {
-      // Try to extract job title and company
-      const titleCompanyRegex = /([A-Za-z0-9\s]+)(?:\s+at\s+|\s*[-|]\s*)([A-Za-z0-9\s]+)/i;
-      const titleCompanyMatch = entry.match(titleCompanyRegex);
+    return jobEntries.slice(0, 3).map(entry => {
+      // Try to extract job title
+      const titleRegex = /(?:^|\n)([A-Z][A-Za-z\s]+)(?:\s*\n|,|\s*\(|\s*-)/;
+      const titleMatch = entry.match(titleRegex);
       
-      // Try to extract dates
-      const dateRegex = /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s.,]+\d{4}\s*(?:[-–—]\s*(?:(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s.,]+\d{4}|Present))?/i;
-      const dateMatch = entry.match(dateRegex);
+      // Try to extract company
+      const companyRegex = /(?:at|with|for)\s+([A-Za-z0-9\s&.,]+)|\n([A-Z][A-Za-z0-9\s&.,]+)(?:\s*\n|,|\s*\()/;
+      const companyMatch = entry.match(companyRegex);
       
       // Try to extract location
       const locationRegex = /([A-Z][a-z]+(?:[\s-][A-Z][a-z]+)*),\s*([A-Z]{2})/;
       const locationMatch = entry.match(locationRegex);
       
+      // Try to extract dates
+      const dateRegex = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\s*(?:–|-|to)\s*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\s*(?:–|-|to)\s*Present|\d{4}\s*(?:–|-|to)\s*\d{4}|\d{4}\s*(?:–|-|to)\s*Present/i;
+      const dateMatch = entry.match(dateRegex);
+      
       // Extract description (everything else)
       let description = entry;
-      if (titleCompanyMatch) {
-        description = description.replace(titleCompanyMatch[0], '');
-      }
-      if (dateMatch) {
-        description = description.replace(dateMatch[0], '');
-      }
-      if (locationMatch) {
-        description = description.replace(locationMatch[0], '');
-      }
+      if (titleMatch) description = description.replace(titleMatch[0], '');
+      if (companyMatch) description = description.replace(companyMatch[0], '');
+      if (locationMatch) description = description.replace(locationMatch[0], '');
+      if (dateMatch) description = description.replace(dateMatch[0], '');
       
-      // Clean up description
-      description = description.replace(/^\s*[-•*]\s*/gm, '').trim();
+      description = description.trim().replace(/\n+/g, ' ');
       
       return {
-        title: titleCompanyMatch ? titleCompanyMatch[1].trim() : 'Position',
-        company: titleCompanyMatch ? titleCompanyMatch[2].trim() : 'Company',
-        location: locationMatch ? locationMatch[0] : undefined,
-        startDate: dateMatch ? dateMatch[0].split('–')[0].trim() : undefined,
+        title: titleMatch ? 
+          titleMatch[1].trim() : 
+          "Position",
+        company: companyMatch ? 
+          (companyMatch[1] || companyMatch[2]).trim() : 
+          "Company",
+        location: locationMatch ? 
+          locationMatch[0] : 
+          undefined,
+        startDate: dateMatch ? 
+          dateMatch[0].split('–')[0].trim() : 
+          undefined,
         endDate: dateMatch && dateMatch[0].includes('–') ? 
-          dateMatch[0].split('–')[1].trim() : 'Present',
+          dateMatch[0].split('–')[1].trim() : 
+          'Present',
         description: description || undefined
       };
     });
@@ -450,14 +474,11 @@ function extractLanguages(text: string): string[] | undefined {
     } else {
       // Check for common languages
       const commonLangs = ['English', 'Spanish', 'French', 'German', 'Chinese', 'Japanese', 'Russian', 'Arabic'];
-      langs = commonLangs.filter(lang => langText.includes(lang));
-      if (langs.length === 0) {
-        return [langText];
+            langs = commonLangs.filter(lang => langText.includes(lang));
+          }
+          
+          return langs.filter(lang => lang.length > 1).slice(0, 5);
+        }
+        
+        return undefined;
       }
-    }
-    
-    return langs.filter(lang => lang.length > 2).slice(0, 5);
-  }
-  
-  return undefined;
-}

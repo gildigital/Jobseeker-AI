@@ -7,12 +7,22 @@ export const authOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || 'mock-google-client-id',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'mock-google-client-secret',
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code"
+        }
+      }
     }),
     LinkedInProvider({
       clientId: process.env.LINKEDIN_CLIENT_ID || 'mock-linkedin-client-id',
       clientSecret: process.env.LINKEDIN_CLIENT_SECRET || 'mock-linkedin-client-secret',
       authorization: {
-        params: { scope: 'openid profile email' }
+        params: { 
+          scope: 'openid profile email',
+          redirect_uri: process.env.NEXTAUTH_URL ? `${process.env.NEXTAUTH_URL}/api/auth/callback/linkedin` : 'http://localhost:3000/api/auth/callback/linkedin'
+        }
       }
     }),
   ],
@@ -74,6 +84,13 @@ export const authOptions = {
       
       return true;
     },
+    async redirect({ url, baseUrl }) {
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
+    }
   },
   pages: {
     signIn: '/auth/login',
@@ -89,5 +106,4 @@ export const authOptions = {
 };
 
 const handler = NextAuth(authOptions);
-
 export { handler as GET, handler as POST };
